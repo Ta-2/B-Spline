@@ -29,8 +29,8 @@ class B_spline:
         self.control_size = self.control_vec.size
         self.knot_size = self.knot_vec.size
 
-        print (self.knot_vec)
-        print (self.control_vec)
+        #print (self.knot_vec)
+        #print (self.control_vec)
 
     def k_index(self, k):
         if k < self.knot_vec[0] or self.knot_vec[-1] < k:
@@ -81,6 +81,9 @@ class B_spline:
                 curve = self.base_func(base_num, t, self.dim)
         return curve
     
+    def calc_curve(self, t, base_num=-1):
+        return np.array([self.B_spline(i, base_num=base_num) for i in t])
+    
 if __name__ == "__main__":
     control_points_dim = 2
     control_points_num = 8
@@ -90,9 +93,7 @@ if __name__ == "__main__":
 
     curve_num = 200
     x = np.linspace(0.0, 1.0, curve_num)
-    y = np.array(
-        [bs.B_spline(t) for t in x]
-        )
+    y = bs.calc_curve(x)
     """
     bases = []
     for i in range(bs.control_size):
