@@ -1,4 +1,4 @@
-from B_spline3D_module import B_spline3D
+from B_spline3D import B_spline3D
 import numpy as np
 import matplotlib.pyplot as plt
 
