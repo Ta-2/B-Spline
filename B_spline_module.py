@@ -16,8 +16,6 @@ class B_spline:
         close = True
 
         if close:
-            #self.knot_size = self.knot_size - 2
-            #self.control_vec = np.linspace(1.0, 1.0, self.control_size)
             self.control_vec = control_points
             if type(knot_vector) is not np.ndarray:
                 self.knot_vec = np.linspace(0.0, 1.0, self.knot_size)
@@ -29,7 +27,6 @@ class B_spline:
             self.knot_vec = np.append([self.knot_vec[0]]*dim, self.knot_vec)
             self.knot_vec = np.append(self.knot_vec, [self.knot_vec[-1]]*dim)
         else:
-            #self.control_vec = np.linspace(1.0, 1.0, self.control_size)
             self.control_vec = control_points
             if type(knot_vector) is not np.ndarray:
                 self.knot_vec = np.linspace(0.0, 1.0, self.knot_size)
