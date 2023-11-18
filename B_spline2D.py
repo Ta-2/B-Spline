@@ -1,11 +1,11 @@
-import B_spline_module as BS
+from B_spline_module import B_spline
 import numpy as np
 import matplotlib.pyplot as plt
 
-class B_spline2D:
+class B_spline_curve2D:
     def __init__(self, dim):
-        self.B_sp_x = BS.B_spline(dim)
-        self.B_sp_y = BS.B_spline(dim)
+        self.B_sp_x = B_spline(dim)
+        self.B_sp_y = B_spline(dim)
     
     def set_control_points(self, cp_x, cp_y, close):
         self.B_sp_x.set_control_points(cp_x, close=close)
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     control_points_x = np.random.rand(control_points_num)
     control_points_y = np.random.rand(control_points_num)
     
-    bs2 = B_spline2D(control_points_dim)
+    bs2 = B_spline_curve2D(control_points_dim)
     bs2.set_control_points(control_points_x, control_points_y, True)
     
     curve_num = 200
