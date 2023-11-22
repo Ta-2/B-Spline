@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 class B_spline_ad:
     def __init__(self, dim):
@@ -85,17 +86,21 @@ class B_spline_ad:
 
 if __name__ == "__main__":
     control_points_dim = 2
-    control_points_num = 8
+    control_points_num = 500
     control_points = np.arange(control_points_num)
     #control_points = np.random.randint(2, 5, (control_points_num))
     bs = B_spline_ad(control_points_dim)
     bs.set_control_points(control_points, close=True)
 
-    curve_num = 200
+    curve_num = 2000
     x = np.linspace(0.0, 1.0, curve_num)
+    start = time.time()
     y = [bs.B_spline_ad(i) for i in x]
+    end = time.time()
+    print("time: " + str(end-start))
 
     plt.plot(x, y)
+    """
     sc_x = np.linspace(0.0, 1.0, bs.control_size - 2*(bs.dim-1))
     sc_y = bs.control_vec[bs.dim-1 : -bs.dim+1]
     print(sc_x)
@@ -107,4 +112,5 @@ if __name__ == "__main__":
     ax.set_xticks(sc_x)
     ax.set_xlim(0.0, 1.0)
     ax.set_yticks(np.append(bs.control_vec, [0.5, 1.0]))
+    """
     plt.show()
