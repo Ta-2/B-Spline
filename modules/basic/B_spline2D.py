@@ -94,12 +94,13 @@ class B_spline:
 if __name__ == "__main__":
     control_points_dim = 2
     control_points_num = 6
-    control_points = np.array([  2,    4,   3,    2,   4,    2])
-    knot =           np.array([0.0, 0.25, 0.25, 0.5, 0.5, 0.75, 1.0])
+    control_points = np.arange(control_points_num)
+    #control_points = np.array([  2,    4,   3,    2,   4,    2])
+    #knot =           np.array([0.0, 0.25, 0.25, 0.5, 0.5, 0.75, 1.0])
     #control_points = np.random.rand(control_points_num)
     bs = B_spline(control_points_dim)
-    bs.set_control_points(control_points, knot_vector=knot, close=True)
-    #bs.set_control_points(control_points, close=True)
+    #bs.set_control_points(control_points, knot_vector=knot, close=True)
+    bs.set_control_points(control_points, close=True)
 
     curve_num = 200
     x = np.linspace(0.0, 1.0, curve_num)

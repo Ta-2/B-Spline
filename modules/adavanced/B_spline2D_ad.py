@@ -6,14 +6,13 @@ class B_spline_ad:
         self.dim = dim
 
     def set_control_points(self, control_points, knot_vector=None, close=True):
+        self.close = close
         self.control_size = control_points.size
         dim = self.dim
         if type(knot_vector) is np.ndarray:
             if knot_vector.size != self.control_size+dim-1:
                 print("error")
         self.knot_size = self.control_size+dim-1
-        #端を閉じているか
-        close = True
 
         if close:
             self.control_vec = control_points
@@ -47,73 +46,65 @@ class B_spline_ad:
             if k < knot:
                 return idx-1
         if self.knot_vec[-1] == k:
-            return self.knot_size-1
-
-    def base_func(self, j, t, k):
-        t_idx = self.k_index(t)
-        if k == 0:
-            if j <= t_idx and t_idx < j+1:
-                return 1.0
+            if self.close:
+                return self.knot_size-1-(self.dim+1)
             else:
-                return 0.0
-        else:
-            t_j   = self.knot_vec[j]
-            t_j1  = self.knot_vec[j+1]
-            t_jk  = self.knot_vec[j+k]
-            t_jk1 = self.knot_vec[j+k+1]
-
-            if (t_jk  - t_j ) != 0.0:
-                left  = (t     - t_j)/(t_jk  - t_j )*self.base_func(j,   t, k-1)
-            else:
-                left = 0.0
-            if (t_jk1 - t_j1) != 0.0:
-                right = (t_jk1 -   t)/(t_jk1 - t_j1)*self.base_func(j+1, t, k-1)
-            else:
-                right = 0.0
-
-            return left + right
-
-    def B_spline(self, t, base_num=-1):
-        curve = 0.0
-        if base_num == -1:
-            for i in range(self.control_size):
-                if t == 1.0 and i==self.control_size-1:
-                    curve += self.control_vec[i]
-                else:
-                    curve += self.control_vec[i]*self.base_func(i, t, self.dim)
-        else:
-            if t == 1.0 and base_num==self.control_size-1:
-                curve = 1.0
-            else:
-                curve = self.base_func(base_num, t, self.dim)
-        return curve
+                return self.knot_size-1
     
-    def calc_curve(self, t, base_num=-1):
-        return np.array([self.B_spline(i, base_num=base_num) for i in t])
+    def calc_weight_of_base(self, t, t_idx, Up_cnt, Down_cnt, L=0, R=0, space=""):
+        if Up_cnt==0 and Down_cnt==0:
+            return 1.0
+        up_weight, down_weight = 0.0, 0.0
+        t_l = self.knot_vec[t_idx    -L]
+        t_r = self.knot_vec[t_idx +1 +R]
+        #space += "  "
+        #print(space + "t_ixd: " + str(t_idx) + ", up_cnt: " + str(Up_cnt) + ", down_cnt: " + str(Down_cnt) + ", L: " + str(L) + ", R: " + str(R))
+
+        t_dif = t_r-t_l
+        if t_dif == 0.0:
+            return 0.0
+        else:
+            if Up_cnt   > 0:
+                up_weight   = self.calc_weight_of_base(t, t_idx, Up_cnt-1, Down_cnt, L, R+1, space)
+                up_weight   *= (t - t_l)/t_dif
+            if Down_cnt > 0:
+                down_weight = self.calc_weight_of_base(t, t_idx, Up_cnt, Down_cnt-1, L+1, R, space)
+                down_weight *= (t_r -t)/t_dif
+        
+        return up_weight + down_weight
+    
+    def B_spline_ad(self, t):
+        t_idx = self.k_index(t)
+        curve = 0.0
+        for i in range(self.dim+1):
+            cp_val = self.control_vec[t_idx-(self.dim-i)]
+            #print("t_idx: " + str(t_idx) + ", cp_idx: " + str(t_idx-i))
+            curve += cp_val*self.calc_weight_of_base(t, t_idx, i, self.dim-i)
+
+        return curve
 
 if __name__ == "__main__":
     control_points_dim = 2
-    control_points_num = 3
-    control_points = np.array([  2,    4,   3])
+    control_points_num = 8
+    control_points = np.arange(control_points_num)
+    #control_points = np.random.randint(2, 5, (control_points_num))
     bs = B_spline_ad(control_points_dim)
     bs.set_control_points(control_points, close=True)
 
     curve_num = 200
     x = np.linspace(0.0, 1.0, curve_num)
-    y = bs.calc_curve(x)
-    
-    bases = []
-    for i in range(bs.control_size):
-        bases.append([bs.B_spline(t, base_num=i) for t in x])
+    y = [bs.B_spline_ad(i) for i in x]
+
+    plt.plot(x, y)
+    sc_x = np.linspace(0.0, 1.0, bs.control_size - 2*(bs.dim-1))
+    sc_y = bs.control_vec[bs.dim-1 : -bs.dim+1]
+    print(sc_x)
+    print(sc_y)
+    plt.scatter(sc_x, sc_y)
     
     ax = plt.gcf().gca()
-    ax.set_xticks(bs.knot_vec)
-    ax.set_xlim(0.0, 1.0)
-    ax.set_yticks(bs.control_vec)
-
     ax.grid()
-    plt.plot(x, y)
-    plt.scatter(np.linspace(0.0, 1.0, bs.control_size), bs.control_vec)
-    for b in bases:
-        plt.plot(x, b)
+    ax.set_xticks(sc_x)
+    ax.set_xlim(0.0, 1.0)
+    ax.set_yticks(np.append(bs.control_vec, [0.5, 1.0]))
     plt.show()
