@@ -52,6 +52,25 @@ class B_spline_ad:
             else:
                 return self.knot_size-1
     
+    def k_index_ad(self, k, close=True):
+        knot_size = self.knot_vec.size
+        if k < self.knot_vec[0] or self.knot_vec[-1] < k:
+            return None
+        
+        L, R = self.dim, knot_size-1-self.dim
+
+        while( 1 < R-L ):
+            C = (L+R)//2
+            pivot = self.knot_vec[C]
+            if pivot == k:
+                return C
+            elif pivot < k:
+                L = C
+            else:
+                R = C
+
+        return (L+R)//2
+
     def calc_weight_of_base(self, t, t_idx, Up_cnt, Down_cnt, L=0, R=0, space=""):
         if Up_cnt==0 and Down_cnt==0:
             return 1.0
@@ -75,7 +94,8 @@ class B_spline_ad:
         return up_weight + down_weight
     
     def B_spline_ad(self, t):
-        t_idx = self.k_index(t)
+        #t_idx = self.k_index(t)
+        t_idx = self.k_index_ad(t)
         curve = 0.0
         for i in range(self.dim+1):
             cp_val = self.control_vec[t_idx-(self.dim-i)]
@@ -86,13 +106,13 @@ class B_spline_ad:
 
 if __name__ == "__main__":
     control_points_dim = 2
-    control_points_num = 500
+    control_points_num = 8
     control_points = np.arange(control_points_num)
-    #control_points = np.random.randint(2, 5, (control_points_num))
+    control_points = np.random.randint(2, 5, (control_points_num))
     bs = B_spline_ad(control_points_dim)
     bs.set_control_points(control_points, close=True)
 
-    curve_num = 2000
+    curve_num = 4000
     x = np.linspace(0.0, 1.0, curve_num)
     start = time.time()
     y = [bs.B_spline_ad(i) for i in x]
