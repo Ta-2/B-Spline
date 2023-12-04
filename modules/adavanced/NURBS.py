@@ -24,49 +24,65 @@ class B_spline_ad:
 
         return knot_vec
 
-    def set_control_points(self, control_points, knot_vector=None, close=True, gradient=True):
+    def set_control_points(self, control_points, knot_vec=None, weight_vec=None, close=True, gradient=True):
         self.close = close
         self.control_size = control_points.size
         dim = self.dim
-        if type(knot_vector) is np.ndarray and not close:
-            if knot_vector.size != self.control_size+dim+1:
+
+        #両端を閉じないときの要素数チェック
+        if type(knot_vec) is np.ndarray and not close:
+            if knot_vec.size != self.control_size+dim+1:
                 print("error")
             else:
-                close =False
+                close = False
 
-        if type(knot_vector) is np.ndarray and close:
-            if knot_vector.size != self.control_size+dim-1:
+        #両端を閉じるときの要素数チェック
+        if type(knot_vec) is np.ndarray and close:
+            if knot_vec.size != self.control_size+dim-1:
+                print("error")
+
+        #重みベクトルがある時の要素数チェック
+        if weight_vec is np.ndarray:
+            if weight_vec.size != control_points.size:
                 print("error")
             else:
-                close =False
-        self.knot_size = self.control_size+dim-1
-
+                close = False
+                
+        #両端を閉じさせる
         if close:
+            self.knot_size = self.control_size+dim-1
             self.control_vec = control_points
-            if type(knot_vector) is not np.ndarray:
+
+            #knotベクトルがない時
+            if type(knot_vec) is not np.ndarray:
                 self.knot_vec = np.linspace(0.0, 1.0, self.knot_size)
             else:
-                self.knot_vec = knot_vector
+                self.knot_vec = knot_vec
             
             cp_front = self.control_vec[0]
             cp_back  = self.control_vec[-1]
 
+            #勾配を再現する
             if gradient:
                 self.control_vec[0]  = (self.control_vec[1]/3.0  + cp_front*2.0/3.0)
                 self.control_vec[-1] = (self.control_vec[-2]/3.0 + cp_back*2.0/3.0 )
+            #制御点を閉じる
             self.control_vec = np.append([cp_front]*(dim-1), self.control_vec)
             self.control_vec = np.append(self.control_vec, [cp_back]*(dim-1))
 
+            #knotベクトルを閉じる
             knot_front = self.knot_vec[0]
             knot_back  = self.knot_vec[-1]
             self.knot_vec = np.append([knot_front]*dim, self.knot_vec)
             self.knot_vec = np.append(self.knot_vec, [knot_back]*dim)
+
+        #そのまま使う
         else:
             self.control_vec = control_points
-            if type(knot_vector) is not np.ndarray:
+            if type(knot_vec) is not np.ndarray:
                 self.knot_vec = np.linspace(0.0, 1.0, self.knot_size)
             else:
-                self.knot_vec = knot_vector
+                self.knot_vec = knot_vec
 
         self.control_size = self.control_vec.size
         self.knot_size = self.knot_vec.size
@@ -160,13 +176,29 @@ if __name__ == "__main__":
     bs = B_spline_ad(control_points_dim)
     close = False
     grad = False
-    #control_points = np.random.randint(2, 5, (control_points_num))
-    #control_points = np.random.uniform(2, 5, control_points_num)
-    #control_points = np.sin(np.linspace(0.0, np.pi, control_points_num))*4
+    control_points = np.random.randint(2, 5, (control_points_num))
+    control_points_not_close = np.random.randint(2, 5, (control_points_num-2*(control_points_dim-1)))
+    knot_vec = np.array([0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4]).astype("float64")/4.0
+    knot_vec_not_close = np.array([0, 1, 1, 2, 2, 3, 3, 4]).astype("float64")/4.0
+
+    #case 1
+    print("case 1")
+    bs.set_control_points(control_points, close=True, gradient=False)
+    #case 2
+    print("case 2")
+    bs.set_control_points(control_points, close=True, gradient=True)
+    #case 3
+    print("case 3")
+    bs.set_control_points(control_points, knot_vec=knot_vec, close=False, gradient=False)
+    #case 4
+    print("case 4")
+    bs.set_control_points(control_points_not_close, knot_vec=knot_vec_not_close, close=True, gradient=False)
+    #case 5
+    print("case 5")
     control_points = np.array([3, 3, 2, 1, 1, 1, 2, 3, 3]).astype("float64")
-    #knot_vec = np.array([0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4]).astype("float64")/4.0
+    weight_vec     = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]).astype("float64")
     knot_vec = bs.generate_dim_fitted_knot(cp_num=control_points.size)
-    bs.set_control_points(control_points, knot_vector=knot_vec, close=close, gradient=grad)
+    bs.set_control_points(control_points, knot_vec=knot_vec, close=close, gradient=grad)
 
     curve_num = 200
     x = np.linspace(0.0, 1.0, curve_num)

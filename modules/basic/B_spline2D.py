@@ -94,7 +94,7 @@ class B_spline:
     
 if __name__ == "__main__":
     control_points_dim = 2
-    control_points_num = 500
+    control_points_num = 5
     control_points = np.arange(control_points_num)
     #control_points = np.array([  2,    4,   3,    2,   4,    2])
     #knot =           np.array([0.0, 0.25, 0.25, 0.5, 0.5, 0.75, 1.0])
@@ -103,30 +103,29 @@ if __name__ == "__main__":
     #bs.set_control_points(control_points, knot_vector=knot, close=True)
     bs.set_control_points(control_points, close=True)
 
-    curve_num = 2000
+    curve_num = 100
     x = np.linspace(0.0, 1.0, curve_num)
 
     start = time.time()
     y = bs.calc_curve(x)
     end = time.time()
     print("time: " + str(end-start))
-    """
+    
     bases = []
     for i in range(bs.control_size):
         bases.append([bs.B_spline(t, base_num=i) for t in x])
-    """
-    """ax = plt.gcf().gca()
+    
+    ax = plt.gcf().gca()
     ax.set_xticks(bs.knot_vec)
     ax.set_xlim(0.0, 1.0)
     ax.set_yticks(bs.control_vec)
 
     ax.grid()
-    """
     plt.plot(x, y)
     #plt.scatter(np.linspace(0.0, 1.0, control_points_num), control_points)
-    #plt.scatter(np.linspace(0.0, 1.0, bs.control_size), bs.control_vec)
-    """
+    plt.scatter(np.linspace(0.0, 1.0, bs.control_size), bs.control_vec)
+    
     for b in bases:
         plt.plot(x, b)
-    """
+    
     plt.show()
