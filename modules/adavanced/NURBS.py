@@ -58,10 +58,15 @@ class B_spline_ad:
                 self.knot_vec = np.linspace(0.0, 1.0, self.knot_size)
             else:
                 self.knot_vec = knot_vec
+
+            #weightベクトルがない時
+            if type(weight_vec) is not np.ndarray:
+                self.weight_vec = np.ones(self.control_size).astype("float64")
+            else:
+                self.weight_vec = weight_vec
             
             cp_front = self.control_vec[0]
             cp_back  = self.control_vec[-1]
-
             #勾配を再現する
             if gradient:
                 self.control_vec[0]  = (self.control_vec[1]/3.0  + cp_front*2.0/3.0)
@@ -69,6 +74,12 @@ class B_spline_ad:
             #制御点を閉じる
             self.control_vec = np.append([cp_front]*(dim-1), self.control_vec)
             self.control_vec = np.append(self.control_vec, [cp_back]*(dim-1))
+
+            #weightベクトルを閉じる
+            weight_front = self.weight_vec[0]
+            weight_back  = self.weight_vec[-1]
+            self.weight_vec = np.append([weight_front]*(dim-1), self.weight_vec)
+            self.weight_vec = np.append(self.weight_vec, [weight_back]*(dim-1))
 
             #knotベクトルを閉じる
             knot_front = self.knot_vec[0]
@@ -79,16 +90,23 @@ class B_spline_ad:
         #そのまま使う
         else:
             self.control_vec = control_points
+
             if type(knot_vec) is not np.ndarray:
                 self.knot_vec = np.linspace(0.0, 1.0, self.knot_size)
             else:
                 self.knot_vec = knot_vec
 
+            if type(weight_vec) is not np.ndarray:
+                self.weight_vec = np.ones(self.knot_size).astype("float64")
+            else:
+                self.weight_vec = weight_vec
+
         self.control_size = self.control_vec.size
         self.knot_size = self.knot_vec.size
 
-        print(self.knot_vec)
         print(self.control_vec)
+        print(self.weight_vec)
+        print(self.knot_vec)
         #print("cp size: " + str(self.control_size) + ", knot size: " + str(self.knot_size) + ", dim: " + str(self.dim))
 
     def k_index(self, k):
@@ -145,30 +163,38 @@ class B_spline_ad:
         
         return up_weight + down_weight
     
-    def B_spline_ad(self, t):
+    def NURBS(self, t):
         #t_idx = self.k_index(t)
         t_idx = self.k_index_ad(t)
         curve = 0.0
+        wbk_sum = 0.0
         for i in range(self.dim+1):
             cp_val = self.control_vec[t_idx-(self.dim-i)]
-            #print("t_idx: " + str(t_idx) + ", cp_idx: " + str(t_idx-i))
-            curve += cp_val*self.calc_weight_of_base(t, t_idx, i, self.dim-i)
+            weight = self.weight_vec[t_idx-(self.dim-i)]
+            wbk = self.calc_weight_of_base(t, t_idx, i, self.dim-i)
+            wbk_sum += weight*wbk
+            curve += cp_val*wbk*weight
 
-        return curve
+        return curve / wbk_sum
     
-    def base(self, t, base_num, cp=False):
+    def NURB_base(self, t, base_num, cp=False):
         t_idx = self.k_index_ad(t)
         curve = 0.0
+        wbk_sum = 0.0
+
         for i in range(self.dim+1):
             if base_num == t_idx-(self.dim-i):
-                if cp:
-                    cp_val = self.control_vec[t_idx-(self.dim-i)]
-                else:
-                    cp_val = 1.0
-                #print("t_idx: " + str(t_idx) + ", cp_idx: " + str(t_idx-i))
-                curve += cp_val*self.calc_weight_of_base(t, t_idx, i, self.dim-i)
+                cp_val = self.control_vec[t_idx-(self.dim-i)] if cp else 1.0
+                wbk = self.calc_weight_of_base(t, t_idx, i, self.dim-i)
+                weight = self.weight_vec[t_idx-(self.dim-i)]
+                curve = cp_val*wbk*weight
 
-        return curve
+        for i in range(self.dim+1):
+            wbk = self.calc_weight_of_base(t, t_idx, i, self.dim-i)
+            weight = self.weight_vec[t_idx-(self.dim-i)]
+            wbk_sum += weight*wbk
+
+        return curve / wbk_sum
 
 if __name__ == "__main__":
     control_points_dim = 2
@@ -196,14 +222,22 @@ if __name__ == "__main__":
     #case 5
     print("case 5")
     control_points = np.array([3, 3, 2, 1, 1, 1, 2, 3, 3]).astype("float64")
-    weight_vec     = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]).astype("float64")
     knot_vec = bs.generate_dim_fitted_knot(cp_num=control_points.size)
-    bs.set_control_points(control_points, knot_vec=knot_vec, close=close, gradient=grad)
+    bs.set_control_points(control_points, close=close, gradient=grad)
+    #case 6
+    print("case 6")
+    weight_vec = np.random.uniform(0.1, 5.0, control_points_num)
+    bs.set_control_points(control_points, weight_vec=weight_vec, close=True, gradient=grad)
+    #case 7
+    print("case 7")
+    weight_vec = np.array([1.0, np.sqrt(2)/2, 1.0, np.sqrt(2)/2, 1.0, np.sqrt(2)/2, 1.0, np.sqrt(2)/2, 1.0])
+    weight_vec = np.ones(control_points_num)
+    bs.set_control_points(control_points, knot_vec=knot_vec, weight_vec=weight_vec, close=False, gradient=grad)
 
     curve_num = 200
     x = np.linspace(0.0, 1.0, curve_num)
     start = time.time()
-    y = [bs.B_spline_ad(i) for i in x]
+    y = [bs.NURBS(i) for i in x]
     end = time.time()
     print("time: " + str(end-start))
     
@@ -211,7 +245,7 @@ if __name__ == "__main__":
     
     bases = []
     for i in range(control_points_num + 2*(control_points_dim-1)):
-        base = [bs.base(t, i, cp=True) for t in x]
+        base = [bs.NURB_base(t, i, cp=False) for t in x]
         bases.append(base)
     for b in bases:
         plt.plot(x, b)
