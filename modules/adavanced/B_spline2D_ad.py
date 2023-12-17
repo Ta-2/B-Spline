@@ -158,14 +158,15 @@ if __name__ == "__main__":
     control_points_dim = 2
     control_points_num = 9
     bs = B_spline_ad(control_points_dim)
-    close = False
+    close = True
     grad = False
-    #control_points = np.random.randint(2, 5, (control_points_num))
+    control_points = np.random.randint(2, 5, (control_points_num))
     #control_points = np.random.uniform(2, 5, control_points_num)
     #control_points = np.sin(np.linspace(0.0, np.pi, control_points_num))*4
-    control_points = np.array([3, 3, 2, 1, 1, 1, 2, 3, 3]).astype("float64")
+    #control_points = np.array([3, 3, 2, 1, 1, 1, 2, 3, 3]).astype("float64")
+    knot_vec = None
     #knot_vec = np.array([0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4]).astype("float64")/4.0
-    knot_vec = bs.generate_dim_fitted_knot(cp_num=control_points.size)
+    #knot_vec = bs.generate_dim_fitted_knot(cp_num=control_points.size)
     bs.set_control_points(control_points, knot_vector=knot_vec, close=close, gradient=grad)
 
     curve_num = 200
@@ -183,7 +184,8 @@ if __name__ == "__main__":
         bases.append(base)
     for b in bases:
         plt.plot(x, b)
-        
+    
+    close = False
     if close:
         sc_x = np.linspace(0.0, 1.0, bs.knot_vec[bs.dim : -bs.dim].size)
         sc_x += (sc_x[1]-sc_x[0])/2
@@ -194,8 +196,8 @@ if __name__ == "__main__":
         sc_y = bs.control_vec
         sc_x = np.linspace(0.0, 1.0, sc_y.size)
 
-    #print(sc_x)
-    #print(sc_y)
+    print(sc_x)
+    print(sc_y)
     plt.scatter(sc_x, sc_y)
     ax = plt.gcf().gca()
     ax.grid()
